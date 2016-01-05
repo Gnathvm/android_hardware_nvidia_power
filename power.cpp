@@ -34,18 +34,41 @@ static struct input_dev_map input_devs[] = {
 static void shield_power_init(struct power_module *module)
 {
     if (!pInfo)
-        pInfo = (powerhal_info*)malloc(sizeof(powerhal_info));
-    pInfo->input_devs = input_devs;
-    pInfo->input_cnt = sizeof(input_devs)/sizeof(struct input_dev_map);
+        pInfo = (powerhal_info*)calloc(1, sizeof(powerhal_info));
+    // pInfo->input_devs = input_devs;
+    // pInfo->input_cnt = sizeof(input_devs)/sizeof(struct input_dev_map);
 
     common_power_init(module, pInfo);
 }
 
+static char hispeed_freq[10];
+static char emc_max[10];
 static void shield_power_set_interactive(struct power_module *module, int on)
 {
     int error = 0;
 
+#ifdef HAVE_TEGRA_LP_CLUSTER
+    if (on) {
+        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/no_lp", "1");
+        sysfs_write("/sys/devices/system/cpu/cpufreq/interactive/hispeed_freq", hispeed_freq);
+        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/emc_max", emc_max);
+    }
+#endif
+
     common_power_set_interactive(module, pInfo, on);
+
+#ifdef HAVE_TEGRA_LP_CLUSTER
+    if (!on) {
+        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/no_lp", "-1");
+        sysfs_write("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq", "51000");
+        memset(hispeed_freq, 0, sizeof(hispeed_freq));
+        sysfs_read("/sys/devices/system/cpu/cpufreq/interactive/hispeed_freq", hispeed_freq, 10);
+        sysfs_write("/sys/devices/system/cpu/cpufreq/interactive/hispeed_freq", "510000");
+        memset(emc_max, 0, sizeof(emc_max));
+        sysfs_read("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/emc_max", emc_max, 10);
+        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/emc_max", "408000000");
+    }
+#endif
 
 #ifdef ENABLE_SATA_STANDBY_MODE
     if (!access(FOSTER_E_HDD, F_OK)) {
@@ -100,6 +123,20 @@ static void shield_set_feature(__attribute__ ((unused)) struct power_module *mod
     }
 }
 
+static int shield_get_feature(__attribute__ ((unused)) struct power_module *module, feature_t feature)
+{
+    switch (feature) {
+    case POWER_FEATURE_DOUBLE_TAP_TO_WAKE:
+        return 0;
+    case POWER_FEATURE_SUPPORTED_PROFILES:
+        return 3;
+    default:
+        ALOGW("Error setting the feature, it doesn't exist %d\n", feature);
+        break;
+    }
+    return 0;
+}
+
 static struct hw_module_methods_t power_module_methods = {
     open: shield_power_open,
 };
@@ -121,4 +158,5 @@ struct power_module HAL_MODULE_INFO_SYM = {
     setInteractive: shield_power_set_interactive,
     powerHint: shield_power_hint,
     setFeature: shield_set_feature,
+    getFeature: shield_get_feature,
 };

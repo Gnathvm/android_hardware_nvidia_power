@@ -29,8 +29,8 @@
 #define MAX_CHARS 32
 #define MAX_INPUT_DEV_COUNT 12
 #define MAX_USE_CASE_STRING_SIZE 80
-// This needs set to the largest power hint in the enum in hardware/power.h
-#define MAX_POWER_HINT_COUNT POWER_HINT_SET_PROFILE
+// This needs set to the largest power hint +1 in the enum in hardware/power.h
+#define MAX_POWER_HINT_COUNT (POWER_HINT_SET_PROFILE + 1)
 
 #define DEFAULT_MIN_ONLINE_CPUS     2
 #define DEFAULT_MAX_ONLINE_CPUS     0
@@ -42,13 +42,22 @@
 //sys node control entry
 #define SYS_NODE_PRISM_ENABLE           "/sys/devices/platform/host1x/tegradc.0/smartdimmer/enable"
 #define SYS_NODE_CPU0_MAX_FREQ          "/sys/devices/system/cpu/cpu0/cpufreq/cpuinfo_max_freq"
+#define SYS_NODE_INTERACTIVE_BOOSTPULSE "/sys/devices/system/cpu/cpufreq/interactive/boostpulse"
 
 //PMQOS control entry
 #define PMQOS_MAX_ONLINE_CPUS           "/dev/max_online_cpus"
 #define PMQOS_MAX_CPU_FREQ              "/dev/cpu_freq_max"
+#define PMQOS_MIN_CPU_FREQ              "/dev/cpu_freq_min"
+
+#ifdef HAVE_PMQOS_EMC_FREQ
+#define PMQOS_MIN_EMC_FREQ              "/dev/emc_freq_min"
+#endif
+
+#ifdef HAVE_PMQOS_CONSTRAINT
 #define PMQOS_CONSTRAINT_CPU_FREQ       "/dev/constraint_cpu_freq"
 #define PMQOS_CONSTRAINT_GPU_FREQ       "/dev/constraint_gpu_freq"
 #define PMQOS_CONSTRAINT_ONLINE_CPUS    "/dev/constraint_online_cpus"
+#endif
 
 //Default value to align with kernel pm qos
 #define PM_QOS_DEFAULT_VALUE		-1

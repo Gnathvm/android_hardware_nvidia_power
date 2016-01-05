@@ -30,6 +30,13 @@ ifneq ($(filter roth,$(TARGET_DEVICE)),)
     LOCAL_CFLAGS += -DPOWER_MODE_LEGACY
 endif
 
+ifneq ($(filter pisces,$(TARGET_DEVICE)),)
+    LOCAL_CFLAGS += -DHAVE_TEGRA_LP_CLUSTER
+else
+    LOCAL_CFLAGS += -DHAVE_PMQOS_CONSTRAINT
+    LOCAL_CFLAGS += -DHAVE_PMQOS_EMC_FREQ
+endif
+
 # Currently used only for T210 devices
 ifneq ($(filter foster,$(TARGET_DEVICE)),)
     LOCAL_CFLAGS += -DPOWER_MODE_SET_INTERACTIVE
