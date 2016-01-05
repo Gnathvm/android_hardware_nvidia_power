@@ -22,7 +22,7 @@
 
 #include "barrier.h"
 
-#define COMMAND_SIZE 20
+#define COMMAND_SIZE (20 * 3 + 1)
 #define NODE_TYPE_DEFAULT 0
 #define NODE_TYPE_PRIORITY 1
 
