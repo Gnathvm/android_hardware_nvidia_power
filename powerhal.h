@@ -46,6 +46,7 @@
 
 //PMQOS control entry
 #define PMQOS_MAX_ONLINE_CPUS           "/dev/max_online_cpus"
+#define PMQOS_MIN_ONLINE_CPUS           "/dev/min_online_cpus"
 #define PMQOS_MAX_CPU_FREQ              "/dev/cpu_freq_max"
 #define PMQOS_MIN_CPU_FREQ              "/dev/cpu_freq_min"
 

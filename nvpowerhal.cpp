@@ -265,6 +265,7 @@ void common_power_open(struct powerhal_info *pInfo)
     // interaction.
     pInfo->hint_interval[POWER_HINT_INTERACTION] = 90000;
     pInfo->hint_interval[POWER_HINT_CPU_BOOST] = 500000;
+    pInfo->hint_interval[POWER_HINT_LAUNCH_BOOST] = 1500000;
     pInfo->hint_interval[POWER_HINT_AUDIO] = 500000;
     pInfo->hint_interval[POWER_HINT_LOW_POWER] = 0;
     pInfo->hint_interval[POWER_HINT_SET_PROFILE] = 0;
@@ -306,14 +307,14 @@ void common_power_init(__attribute__ ((unused)) struct power_module *module, str
     pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_CPU_FREQ,
                                             PM_QOS_BOOST_PRIORITY,
                                             PM_QOS_DEFAULT_VALUE,
-                                            pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                            pInfo->cpu0_max_frequency,
                                             s2ns(15));
 #else
     pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MAX_CPU_FREQ,
-                                            pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                            pInfo->cpu0_max_frequency,
                                             s2ns(15));
     pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_CPU_FREQ,
-                                            pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                            pInfo->cpu0_max_frequency,
                                             s2ns(15));
 #endif
 }
@@ -466,8 +467,6 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
     if (!pInfo)
         return;
 
-    ALOGI("power_hint %d %p", hint, data);
-
     if (check_hint(pInfo, hint, &t) < 0)
         return;
 
@@ -479,9 +478,6 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
         if (pInfo->ftrace_enable) {
             sysfs_write("/sys/kernel/debug/tracing/trace_marker", "Start POWER_HINT_INTERACTION\n");
         }
-#ifdef SYS_NODE_INTERACTIVE_BOOSTPULSE
-        sysfs_write(SYS_NODE_INTERACTIVE_BOOSTPULSE, "1");
-#endif
         // Boost to interaction_boost_frequency
 #ifdef PMQOS_CONSTRAINT_CPU_FREQ
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_CPU_FREQ,
@@ -491,11 +487,11 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                 ms2ns(100));
 #else
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MAX_CPU_FREQ,
-                                                pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
-                                                ms2ns(15));
+                                                pInfo->cpu0_max_frequency,
+                                                ms2ns(100));
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_CPU_FREQ,
-                                                pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
-                                                ms2ns(15));
+                                                pInfo->interaction_boost_frequency,
+                                                ms2ns(100));
 #endif
         // During the animation, we need some level of CPU/GPU/EMC frequency floor
         // to get perfect animation. Forcing CPU frequency through PMQoS does not
@@ -504,6 +500,10 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_ONLINE_CPUS,
                                                 PM_QOS_BOOST_PRIORITY,
                                                 PM_QOS_DEFAULT_VALUE,
+                                                2,
+                                                s2ns(2));
+#else
+        pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_ONLINE_CPUS,
                                                 2,
                                                 s2ns(2));
 #endif
@@ -515,7 +515,7 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                 s2ns(2));
 #else
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MAX_CPU_FREQ,
-                                                pInfo->animation_boost_frequency,
+                                                pInfo->cpu0_max_frequency,
                                                 s2ns(2));
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_CPU_FREQ,
                                                 pInfo->animation_boost_frequency,
@@ -533,26 +533,26 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                  396000,
                                                  s2ns(2));
 #endif
-        break;
-    case POWER_HINT_CPU_BOOST:
-    case POWER_HINT_LAUNCH_BOOST:
 #ifdef SYS_NODE_INTERACTIVE_BOOSTPULSE
         sysfs_write(SYS_NODE_INTERACTIVE_BOOSTPULSE, "1");
 #endif
+        break;
+    case POWER_HINT_CPU_BOOST:
+    case POWER_HINT_LAUNCH_BOOST:
         nsec = intdata() ? us2ns(intdata()) : ms2ns(15000);
         // Boost to max
 #ifdef PMQOS_CONSTRAINT_CPU_FREQ
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_CPU_FREQ,
                                                 PM_QOS_BOOST_PRIORITY,
                                                 PM_QOS_DEFAULT_VALUE,
-                                                pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                                pInfo->cpu0_max_frequency,
                                                 nsec);
 #else
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MAX_CPU_FREQ,
-                                                pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                                pInfo->cpu0_max_frequency,
                                                 nsec);
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_CPU_FREQ,
-                                                pInfo->available_frequencies[pInfo->num_available_frequencies - 1],
+                                                pInfo->cpu0_max_frequency,
                                                 nsec);
 #endif
 #ifdef PMQOS_CONSTRAINT_ONLINE_CPUS
@@ -560,19 +560,25 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                 PM_QOS_BOOST_PRIORITY,
                                                 PM_QOS_DEFAULT_VALUE,
                                                 2,
-                                                ms2ns(1500));
+                                                nsec);
+        pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_ONLINE_CPUS,
+                                                2,
+                                                nsec);
 #endif
 #ifdef PMQOS_CONSTRAINT_GPU_FREQ
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_GPU_FREQ,
                                                 PM_QOS_BOOST_PRIORITY,
                                                 PM_QOS_DEFAULT_VALUE,
                                                 180000,
-                                                ms2ns(1500));
+                                                nsec);
 #endif
 #ifdef HAVE_PMQOS_EMC_FREQ
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_EMC_FREQ,
                                                 792000,
-                                                ms2ns(1500));
+                                                nsec);
+#endif
+#ifdef SYS_NODE_INTERACTIVE_BOOSTPULSE
+        sysfs_write(SYS_NODE_INTERACTIVE_BOOSTPULSE, "1");
 #endif
         break;
     case POWER_HINT_AUDIO:
@@ -584,9 +590,6 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                 512000,
                                                 s2ns(1));
 #else
-        pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MAX_CPU_FREQ,
-                                                512000,
-                                                s2ns(1));
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_MIN_CPU_FREQ,
                                                 512000,
                                                 s2ns(1));
@@ -613,7 +616,6 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
 #endif
         break;
     case POWER_HINT_SET_PROFILE:
-        ALOGE("set_profile %d", intdata());
         set_power_profile(intdata());
         break;
     default:
