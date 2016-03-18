@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+#define LOG_TAG "powerHAL"
 
 #include "powerhal.h"
 
@@ -59,7 +60,7 @@ static void shield_power_set_interactive(struct power_module *module, int on)
 
 #ifdef HAVE_TEGRA_LP_CLUSTER
     if (!on) {
-        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/no_lp", "-1");
+        sysfs_write("/sys/devices/system/cpu/cpuquiet/tegra_cpuquiet/no_lp", "0");
         sysfs_write("/sys/devices/system/cpu/cpu0/cpufreq/scaling_min_freq", "51000");
         memset(hispeed_freq, 0, sizeof(hispeed_freq));
         sysfs_read("/sys/devices/system/cpu/cpufreq/interactive/hispeed_freq", hispeed_freq, 10);
