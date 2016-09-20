@@ -462,7 +462,7 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
 {
     uint64_t t;
 #define intdata() (data ? *reinterpret_cast<int *>(data) : 0)
-    int nsec;
+    nsecs_t nsec;
 
     if (!pInfo)
         return;
