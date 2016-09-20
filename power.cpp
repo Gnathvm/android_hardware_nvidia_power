@@ -129,7 +129,7 @@ static int shield_get_feature(__attribute__ ((unused)) struct power_module *modu
     switch (feature) {
     case POWER_FEATURE_DOUBLE_TAP_TO_WAKE:
         return 0;
-#ifdef HAVE_POWER_FEATURE_SUPPORTED_PROFILES
+#if PLATFORM_SDK_VERSION >= 23
     case POWER_FEATURE_SUPPORTED_PROFILES:
         return 3;
 #endif
@@ -161,7 +161,7 @@ struct power_module HAL_MODULE_INFO_SYM = {
     setInteractive: shield_power_set_interactive,
     powerHint: shield_power_hint,
     setFeature: shield_set_feature,
-#ifdef HAVE_POWER_FEATURE_SUPPORTED_PROFILES
+#if PLATFORM_SDK_VERSION >= 24
     getFeature: shield_get_feature,
 #endif
 };
