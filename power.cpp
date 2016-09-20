@@ -141,28 +141,28 @@ static int shield_get_feature(__attribute__ ((unused)) struct power_module *modu
 }
 
 static struct hw_module_methods_t power_module_methods = {
-    open: shield_power_open,
+    .open = shield_power_open,
 };
 
 struct power_module HAL_MODULE_INFO_SYM = {
-    common: {
-        tag: HARDWARE_MODULE_TAG,
-        module_api_version: POWER_MODULE_API_VERSION_0_3,
-        hal_api_version: HARDWARE_HAL_API_VERSION,
-        id: POWER_HARDWARE_MODULE_ID,
-        name: "Shield Power HAL",
-        author: "The CyanogenMod Project",
-        methods: &power_module_methods,
-        dso: NULL,
-        reserved: {0},
+    .common = {
+        .tag = HARDWARE_MODULE_TAG,
+        .module_api_version = POWER_MODULE_API_VERSION_0_3,
+        .hal_api_version = HARDWARE_HAL_API_VERSION,
+        .id = POWER_HARDWARE_MODULE_ID,
+        .name = "Shield Power HAL",
+        .author = "The CyanogenMod Project",
+        .methods = &power_module_methods,
+        .dso = NULL,
+        .reserved = {0},
     },
 
-    init: shield_power_init,
-    setInteractive: shield_power_set_interactive,
-    powerHint: shield_power_hint,
-    setFeature: shield_set_feature,
+    .init = shield_power_init,
+    .setInteractive = shield_power_set_interactive,
+    .powerHint = shield_power_hint,
+    .setFeature = shield_set_feature,
 #if PLATFORM_SDK_VERSION >= 24
-    getFeature: shield_get_feature,
+    .getFeature = shield_get_feature,
 #endif
 };
 static void *reserved[24];
