@@ -124,21 +124,23 @@ static void shield_set_feature(__attribute__ ((unused)) struct power_module *mod
     }
 }
 
+#if PLATFORM_SDK_VERSION >= 23
 static int shield_get_feature(__attribute__ ((unused)) struct power_module *module, feature_t feature)
 {
     switch (feature) {
     case POWER_FEATURE_DOUBLE_TAP_TO_WAKE:
         return 0;
-#if PLATFORM_SDK_VERSION >= 23
+
     case POWER_FEATURE_SUPPORTED_PROFILES:
         return 3;
-#endif
+
     default:
         ALOGW("Error setting the feature, it doesn't exist %d\n", feature);
         break;
     }
     return 0;
 }
+#endif
 
 static struct hw_module_methods_t power_module_methods = {
     .open = shield_power_open,
@@ -161,7 +163,7 @@ struct power_module HAL_MODULE_INFO_SYM = {
     .setInteractive = shield_power_set_interactive,
     .powerHint = shield_power_hint,
     .setFeature = shield_set_feature,
-#if PLATFORM_SDK_VERSION >= 24
+#if PLATFORM_SDK_VERSION >= 23
     .getFeature = shield_get_feature,
 #endif
 };
