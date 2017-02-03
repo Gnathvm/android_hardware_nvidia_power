@@ -266,7 +266,9 @@ void common_power_open(struct powerhal_info *pInfo)
     pInfo->hint_interval[POWER_HINT_INTERACTION] = 90000;
     pInfo->hint_interval[POWER_HINT_CPU_BOOST] = 500000;
     pInfo->hint_interval[POWER_HINT_LAUNCH_BOOST] = 1500000;
+#if PLATFORM_SDK_VERSION <= 22
     pInfo->hint_interval[POWER_HINT_AUDIO] = 500000;
+#endif
     pInfo->hint_interval[POWER_HINT_LOW_POWER] = 0;
     pInfo->hint_interval[POWER_HINT_SET_PROFILE] = 0;
 
@@ -581,6 +583,7 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
         sysfs_write(SYS_NODE_INTERACTIVE_BOOSTPULSE, "1");
 #endif
         break;
+#if PLATFORM_SDK_VERSION <= 22
     case POWER_HINT_AUDIO:
         // Boost to 512 Mhz frequency for one second
 #ifdef PMQOS_CONSTRAINT_CPU_FREQ
@@ -595,6 +598,8 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
                                                 s2ns(1));
 #endif
         break;
+#endif // PLATFORM_SDK_VERSION
+
     case POWER_HINT_LOW_POWER:
 #ifdef POWER_MODE_SET_INTERACTIVE
         // Set interactive governor parameters according to power mode
