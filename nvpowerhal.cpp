@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+//#define LOG_NDEBUG 0
 #define LOG_TAG "powerHAL::common"
 
 #include <hardware/hardware.h>
@@ -266,6 +267,9 @@ void common_power_open(struct powerhal_info *pInfo)
     pInfo->hint_interval[POWER_HINT_INTERACTION] = 90000;
     pInfo->hint_interval[POWER_HINT_CPU_BOOST] = 500000;
     pInfo->hint_interval[POWER_HINT_LAUNCH_BOOST] = 1500000;
+#if PLATFORM_SDK_VERSION >= 24
+    pInfo->hint_interval[POWER_HINT_LAUNCH] = 1500000;
+#endif
 #if PLATFORM_SDK_VERSION <= 22
     pInfo->hint_interval[POWER_HINT_AUDIO] = 500000;
 #endif
@@ -465,6 +469,7 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
     uint64_t t;
 #define intdata() (data ? *reinterpret_cast<int *>(data) : 0)
     nsecs_t nsec;
+    ALOGV("power hint: 0x%x with data=%p", hint, data);
 
     if (!pInfo)
         return;
@@ -541,7 +546,29 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
         break;
     case POWER_HINT_CPU_BOOST:
     case POWER_HINT_LAUNCH_BOOST:
-        nsec = intdata() ? us2ns(intdata()) : ms2ns(15000);
+#if PLATFORM_SDK_VERSION >= 24
+    case POWER_HINT_LAUNCH:
+#endif
+        switch (hint) {
+#if PLATFORM_SDK_VERSION >= 23
+        case POWER_HINT_LAUNCH_BOOST:
+            nsec = ms2ns(15000);
+            break;
+#endif
+
+#if PLATFORM_SDK_VERSION >= 24
+        case POWER_HINT_LAUNCH:
+            if (!intdata()) {
+                return;
+            }
+            nsec = ms2ns(15000);
+            break;
+#endif
+
+        default:
+            nsec = intdata() ? us2ns(intdata()) : ms2ns(15000);
+        }
+        ALOGV("cpu boost for %lld ns", (long long) nsec);
         // Boost to max
 #ifdef PMQOS_CONSTRAINT_CPU_FREQ
         pInfo->mTimeoutPoker->requestPmQosTimed(PMQOS_CONSTRAINT_CPU_FREQ,
