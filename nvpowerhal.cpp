@@ -266,7 +266,9 @@ void common_power_open(struct powerhal_info *pInfo)
     // interaction.
     pInfo->hint_interval[POWER_HINT_INTERACTION] = 90000;
     pInfo->hint_interval[POWER_HINT_CPU_BOOST] = 500000;
+#if PLATFORM_SDK_VERSION < 24
     pInfo->hint_interval[POWER_HINT_LAUNCH_BOOST] = 1500000;
+#endif
 #if PLATFORM_SDK_VERSION >= 24
     pInfo->hint_interval[POWER_HINT_LAUNCH] = 1500000;
 #endif
@@ -545,12 +547,14 @@ void common_power_hint(__attribute__ ((unused)) struct power_module *module, str
 #endif
         break;
     case POWER_HINT_CPU_BOOST:
+#if PLATFORM_SDK_VERSION < 24
     case POWER_HINT_LAUNCH_BOOST:
+#endif
 #if PLATFORM_SDK_VERSION >= 24
     case POWER_HINT_LAUNCH:
 #endif
         switch (hint) {
-#if PLATFORM_SDK_VERSION >= 23
+#if PLATFORM_SDK_VERSION >= 23 && PLATFORM_SDK_VERSION < 24
         case POWER_HINT_LAUNCH_BOOST:
             nsec = ms2ns(15000);
             break;
